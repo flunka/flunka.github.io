@@ -1,0 +1,5 @@
+baseURL = 'https://flunka.github.io/'
+languageCode = 'en-us'
+title = 'My notes'
+theme = 'PaperMod'
+
