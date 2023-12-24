@@ -7,3 +7,7 @@ params:
   description: Just my notes
   defaultTheme: dark
 
+outputs:
+  - HTML
+  - RSS
+
