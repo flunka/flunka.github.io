@@ -1,0 +1,9 @@
+baseURL: 'https://flunka.github.io/'
+languageCode: 'en-us'
+title: 'My notes'
+theme: 'PaperMod'
+params:
+  author: Piotr Banas
+  description: Just my notes
+  defaultTheme: dark
+
