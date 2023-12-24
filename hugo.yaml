@@ -17,6 +17,7 @@ params:
   author: Piotr Banas
   description: Just my notes
   defaultTheme: dark
+  ShowRssButtonInSectionTermList: true
 
 outputs:
   - HTML
