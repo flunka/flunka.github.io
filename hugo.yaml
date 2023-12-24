@@ -2,6 +2,17 @@ baseURL: 'https://flunka.github.io/'
 languageCode: 'en-us'
 title: 'My notes'
 theme: 'PaperMod'
+menu:
+  main:
+    - name: Archive
+      url: archives
+      weight: 5
+    - name: Search
+      url: search/
+      weight: 10
+    - name: Tags
+      url: tags/
+      weight: 10
 params:
   author: Piotr Banas
   description: Just my notes
