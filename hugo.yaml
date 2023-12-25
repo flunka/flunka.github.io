@@ -22,4 +22,5 @@ params:
 outputs:
   - HTML
   - RSS
+  - JSON
 
