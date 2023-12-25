@@ -2,9 +2,9 @@
 title: 'Create Virsh Ubuntu VM'
 date: 2023-12-25T02:15:17+01:00
 draft: false
-tag:
-    - virtualization
-    - libvirt
+tags:
+  - virtualization
+  - libvirt
 ---
 ## Download qcow image
 Download qcow image from [Ubuntu repo](https://cloud-images.ubuntu.com)
