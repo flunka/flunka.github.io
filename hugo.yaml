@@ -20,7 +20,8 @@ params:
   ShowRssButtonInSectionTermList: true
 
 outputs:
-  - HTML
-  - RSS
-  - JSON
+  home:
+    - HTML
+    - RSS
+    - JSON
 
