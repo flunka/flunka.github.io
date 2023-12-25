@@ -23,8 +23,10 @@ Examples can be found [here](https://libvirt.org/formatnetwork.html#example-conf
 </network>
 ```
 ## Create network
-`sudo virsh net-define /path/to/network.xml`
-`sudo virsh net-start <network-name>`
+```bash
+sudo virsh net-define /path/to/network.xml
+sudo virsh net-start <network-name>
+```
 ## Create simple domain xml
 Examples can be found [here](https://libvirt.org/drvqemu.html#example-domain-xml-config)
 To boot from disk disk type must be defined (driver tag).
@@ -56,6 +58,11 @@ To boot from disk disk type must be defined (driver tag).
     <graphics type='vnc' port='-1'/>
   </devices>
 </domain>
+```
+## Create vm
+```bash
+sudo virsh define /paht/to/vm.xml
+sudo virsh start <vm-name>
 ```
 
 ## Trobleshooting
