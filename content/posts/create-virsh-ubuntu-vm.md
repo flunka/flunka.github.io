@@ -8,6 +8,13 @@ tags:
 ---
 ## Download qcow image
 Download qcow image from [Ubuntu repo](https://cloud-images.ubuntu.com)
+## Resize image
+```bash
+qemu-img info ubuntu.img
+qemu-img resize ubuntu.img 20G
+#or
+qemu-img resize ubuntu.img +10G
+```
 ## Create network xml
 Examples can be found [here](https://libvirt.org/formatnetwork.html#example-configuration)
 ```xml
