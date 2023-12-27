@@ -15,6 +15,34 @@ qemu-img resize ubuntu.img 20G
 #or
 qemu-img resize ubuntu.img +10G
 ```
+## Create user-data and meta-date for cloud-init
+Users are created on the first boot, so it impossible to change password/ssh key after first boot.
+To create password hash use following command: `mkpasswd --method=SHA-512 --rounds=4096`
+user-data
+```yaml
+#cloud-config
+users:
+  - name: ubuntu
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3...asdf root@localhost
+    sudo: 'ALL=(ALL) NOPASSWD:ALL'
+    groups: sudo
+    shell: /bin/bash
+  - name: ubuntu2
+    lock_passwd: false
+    passwd: <password-hash>
+    sudo: 'ALL=(ALL) NOPASSWD:ALL'
+    groups: sudo
+    shell: /bin/bash
+```
+meta-data
+```yaml
+local-hostname: my-host
+```
+## Create iso image
+```bash
+genisoimage -output cloud-init.iso -volid cidata -joliet -rock user-data meta-data
+```
 ## Create network xml
 Examples can be found [here](https://libvirt.org/formatnetwork.html#example-configuration)
 ```xml
@@ -48,6 +76,11 @@ To boot from disk disk type must be defined (driver tag).
   </os>
   <devices>
     <emulator>/usr/bin/qemu-system-x86_64</emulator>
+    <disk type='file' device='cdrom'>
+      <source file='/path/to/cloud-init.iso'/>
+      <target dev='hdc'/>
+      <readonly/>
+    </disk>
     <disk type='file' device='disk'>
       <source file='/path/to/image.qcow'/>
       <target dev='hda'/>
@@ -74,3 +107,4 @@ sudo virsh start <vm-name>
 
 ## Trobleshooting
 * If you are not able to connect to console (`virsh console <vm-name>`). You can try to use vncviewer to connect to vm. At `/var/log/libvirt/qemu/<vm-name>.log` you can find vnc connection details
+* To validate cloud-init config use following commnad: `cloud-init schema -c <your-user-data-file>`
