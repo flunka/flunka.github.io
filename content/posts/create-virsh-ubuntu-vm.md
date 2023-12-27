@@ -16,8 +16,8 @@ qemu-img resize ubuntu.img 20G
 qemu-img resize ubuntu.img +10G
 ```
 ## Create user-data and meta-date for cloud-init
-Users are created on the first boot, so it impossible to change password/ssh key after first boot.
-To create password hash use following command: `mkpasswd --method=SHA-512 --rounds=4096`
+Users are created on the first boot, so it impossible to change password/ssh key after first boot.\
+To create password hash use following command: `mkpasswd --method=SHA-512 --rounds=4096`\
 user-data
 ```yaml
 #cloud-config
@@ -63,7 +63,7 @@ sudo virsh net-define /path/to/network.xml
 sudo virsh net-start <network-name>
 ```
 ## Create simple domain xml
-Examples can be found [here](https://libvirt.org/drvqemu.html#example-domain-xml-config)
+Examples can be found [here](https://libvirt.org/drvqemu.html#example-domain-xml-config)\
 To boot from disk disk type must be defined (driver tag).
 ```xml
 <domain type='qemu'>
