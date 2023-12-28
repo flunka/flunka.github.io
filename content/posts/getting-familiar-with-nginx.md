@@ -69,4 +69,103 @@ server {
   proxy_pass ntp;
 }
 ```
+## Traffic management
+### A/B testing
+To split request in sepecified proportion you can use `split_clients` module. It takes 3 parameters:
+* string for hash
+* output variable
+* proportion mapping
+### A/B testing example
+This example splits requests to static file. 33.3% percent of users will get file from `sitev2` dir and rest of users from `sitev1` dir.
+```
+split_clients "${remote_addr}" $site_root_folder {
+  33.3% "/var/www/sitev2/";
+  * "/var/www/sitev1/";
+}
+server {
+  listen 80 _;
+  root $site_root_folder;
+  location / {
+    index index.html;
+  }
+}
+```
+### GeoIP
+#### Instalation
+```bash
+apt-get install nginx-module-geoip
+mkdir /etc/nginx/geoip
+cd /etc/nginx/geoip
+wget "http://geolite.maxmind.com/download/geoip/database/GeoLiteCountry/GeoIP.dat.gz"
+gunzip GeoIP.dat.gz
+wget "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
+gunzip GeoLiteCity.dat.gz
+```
+#### Usage
+```
+load_module "/usr/lib64/nginx/modules/ngx_http_geoip_module.so";
+http {
+  geoip_country /etc/nginx/geoip/GeoIP.dat;
+  geoip_city /etc/nginx/geoip/GeoLiteCity.dat;
+  # ...
+}
+```
+#### Variables
+`geoip_country` and `geoip_city` gives following variables:
+* `$geoip_country_code`
+* `$geoip_country_code3`
+* `$geoip_country_name`
+* `$geoip_city_country_code`
+* `$geoip_city_country_code3`
+* `$geoip_city_country_name`
+* `$geoip_city`
+* `$geoip_latitude`
+* `$geoip_longitude`
+* `$geoip_city_continent_code`
+* `$geoip_postal_code`
+* `$geoip_region`
+* `$geoip_region_name`
 
+Those variables can be pass to your application or some traffic decisions can be made based on it.
+
+### Limiting connections
+To limit http connctions you should create zone with `limit_conn_zone` directive (key is remote address in binary form, zone name is limitbyaddr and its size is 10MB). `limit_conn_status` specifies resposnse code if limit is reached (503 is default). `limit_conn` directive takes two parameters: zone name and number of connections. You can use `limit_conn` in `http`, `server` and `location` context.
+```
+http {
+  limit_conn_zone $binary_remote_addr zone=limitbyaddr:10m;
+  limit_conn_status 429;
+  # ...
+  server {
+    # ...
+    limit_conn limitbyaddr 40;
+    # ...
+  }
+}
+```
+### Limiting rate
+To limit rate of http requests you can create zone with `limit_req_zone` directive to set allowed request rate. To `limit_req` directive you can add two optional parameters `burst` and `delay`. `burst` will allow to exceed rate limit, but then all requests will be rejected. `delay` specifies how many packets can be made up front without throttling. It can be use in `http`(to verify), `server` and `location` contexts.
+```
+http {
+  limit_req_zone $binary_remote_addr zone=limitbyaddr:10m rate=3r/s;
+  limit_req_status 429;
+  # ...
+  server {
+    # ...
+    limit_req zone=limitbyaddr;
+    location / {
+      limit_req zone=limitbyaddr burst=12 delay=9;
+    }
+    # ...
+  }
+}
+```
+### Limiting bandwidth
+You can limit bandwith with `limit_rate_after` and `limit_rate` directives. Limiting bandwidth is per connection, so it connection limit should also be configured. It can be used in `http`, `server` and `location` context.
+Following example limits bandwidth to 1 MB/sec after 10MB.
+
+```
+location /download/ {
+  limit_rate_after 10m;
+  limit_rate 1m;
+}
+```
