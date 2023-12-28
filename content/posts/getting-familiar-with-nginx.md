@@ -71,7 +71,7 @@ server {
 ```
 ## Traffic management
 ### A/B testing
-To split request in sepecified proportion you can use `split_clients` module. It takes 3 parameters:
+To split request in specified proportion you can use `split_clients` module. It takes 3 parameters:
 * string for hash
 * output variable
 * proportion mapping
@@ -91,7 +91,7 @@ server {
 }
 ```
 ### GeoIP
-#### Instalation
+#### Installation
 ```bash
 apt-get install nginx-module-geoip
 mkdir /etc/nginx/geoip
@@ -111,25 +111,12 @@ http {
 }
 ```
 #### Variables
-`geoip_country` and `geoip_city` gives following variables:
-* `$geoip_country_code`
-* `$geoip_country_code3`
-* `$geoip_country_name`
-* `$geoip_city_country_code`
-* `$geoip_city_country_code3`
-* `$geoip_city_country_name`
-* `$geoip_city`
-* `$geoip_latitude`
-* `$geoip_longitude`
-* `$geoip_city_continent_code`
-* `$geoip_postal_code`
-* `$geoip_region`
-* `$geoip_region_name`
-
-Those variables can be pass to your application or some traffic decisions can be made based on it.
+`geoip_country` and `geoip_city` give variables that start with `$geoip`.\
+Those variables can be pass to your application or some traffic decisions can be made based on it.\
+All variables are available at [nginx site](http://nginx.org/en/docs/varindex.html)
 
 ### Limiting connections
-To limit http connctions you should create zone with `limit_conn_zone` directive (key is remote address in binary form, zone name is limitbyaddr and its size is 10MB). `limit_conn_status` specifies resposnse code if limit is reached (503 is default). `limit_conn` directive takes two parameters: zone name and number of connections. You can use `limit_conn` in `http`, `server` and `location` context.
+To limit HTTP connections you should create zone with `limit_conn_zone` directive (key is remote address in binary form, zone name is limitbyaddr and its size is 10MB). `limit_conn_status` specifies response code if limit is reached (503 is default). `limit_conn` directive takes two parameters: zone name and number of connections. You can use `limit_conn` in `http`, `server` and `location` context.
 ```
 http {
   limit_conn_zone $binary_remote_addr zone=limitbyaddr:10m;
@@ -143,7 +130,7 @@ http {
 }
 ```
 ### Limiting rate
-To limit rate of http requests you can create zone with `limit_req_zone` directive to set allowed request rate. To `limit_req` directive you can add two optional parameters `burst` and `delay`. `burst` will allow to exceed rate limit, but then all requests will be rejected. `delay` specifies how many packets can be made up front without throttling. It can be use in `http`(to verify), `server` and `location` contexts.
+To limit rate of HTTP requests you can create zone with `limit_req_zone` directive to set allowed request rate. To `limit_req` directive you can add two optional parameters `burst` and `delay`. `burst` will allow to exceed rate limit, but then all requests will be rejected. `delay` specifies how many packets can be made up front without throttling. It can be use in `http`(to verify), `server` and `location` contexts.
 ```
 http {
   limit_req_zone $binary_remote_addr zone=limitbyaddr:10m rate=3r/s;
@@ -160,12 +147,42 @@ http {
 }
 ```
 ### Limiting bandwidth
-You can limit bandwith with `limit_rate_after` and `limit_rate` directives. Limiting bandwidth is per connection, so it connection limit should also be configured. It can be used in `http`, `server` and `location` context.
+You can limit bandwidth with `limit_rate_after` and `limit_rate` directives. Limiting bandwidth is per connection, so it connection limit should also be configured. It can be used in `http`, `server` and `location` context.
 Following example limits bandwidth to 1 MB/sec after 10MB.
 
 ```
 location /download/ {
   limit_rate_after 10m;
   limit_rate 1m;
+}
+```
+## Caching
+To create cache for requests you can use `proxy_cache_path` and specify:
+* path to directory that will be created for cache,
+* zone name for shared memory and its size (in example name is CACHE and size is 60MB)
+* (optional) directory structure (`levels`)
+* (optional) when release cached entries (`inactive`)
+* (optional) max size of cache (`max_size`)
+
+`proxy_cache_path` can be used only in `http` context.\
+To use created cache you have to use `proxy_cache` directive in `http`, `server` or `location` context.\
+You can define input for hash with `proxy_cache_key` directive.\
+Cache can be bypassed by using `proxy_cache_bypass` directive. In example cache for location `/live` will be bypassed when request contains header `cache_bypass`.\
+To increase nginx performance you can add header to response to allow client to cache responses. In example all css and js files should cached on client side and expired after one year. `~*` modifier after `location` means that URI should be match for case insensitive regular expression.
+### Example
+```
+http {
+  proxy_cache_path /var/nginx/cache keys_zone=CACHE:60m levels=1:2 inactive=3h max_size=20g;
+  server {
+    proxy_cache CACHE;
+    proxy_cache_key "$host$request_uri $cookie_user";
+    location /live {
+        proxy_cache_bypass $http_cache_bypass;
+    }
+    location ~* \.(css|js)$ {
+      expires 1y;
+      add_header Cache-Control "public";
+    }
+  }
 }
 ```
