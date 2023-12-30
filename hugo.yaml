@@ -18,6 +18,13 @@ params:
   description: Just my notes
   defaultTheme: dark
   ShowRssButtonInSectionTermList: true
+  ShowReadingTime: true
+  ShowToc: true
+
+  homeInfoParams:
+    Title: Hi
+    Content: >
+      The main purpose of this website is to document my learning.
 
 outputs:
   home:
