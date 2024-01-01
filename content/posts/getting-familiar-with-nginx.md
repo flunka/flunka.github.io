@@ -71,6 +71,28 @@ server {
   proxy_pass ntp;
 }
 ```
+### HTTP/2
+To configure HTTP/2 you have to use `http2` keyword in `listen` directive. It is possible to use HTTP/2 without SSL, but many clients do not support HTTP/2 without encryption. To use encryption to upstream use `grpcs://` protocol.
+
+### HTTP/2 Example
+```
+upstream grpcservers {
+  server backend1.local:50051;
+  server backend2.local:50051;
+}
+server {
+  listen 443 ssl http2 default_server;
+  ssl_certificate server.crt;
+  ssl_certificate_key server.key;
+  location / {
+    grpc_pass grpc://grpcservers;
+  }
+  location = /demo.html {
+    http2_push /style.css;
+    http2_push /image1.jpg;
+  }
+}
+```
 ## Traffic management
 ### A/B testing
 To split request in specified proportion you can use `split_clients` module. It takes 3 parameters:
@@ -315,3 +337,19 @@ echo -n '1924905600/resources/index.html127.0.0.1 mySecret' \
 ```
 MD5 hash and expiration date in the Unix epoch format we have to add in query string `/resources/index.html?md5=sqysOw5kMvQBL3j9ODCyoQ&expires=1924905600`
 
+## Streaming
+### Serving MP4 and FLV
+The only thing to enable streaming is to use `mp4` or `flv` directive under desired location.
+```
+http {
+  server {
+    # ...
+    location /videos/ {
+      mp4;
+    }
+    location ~ \.flv$ {
+      flv;
+    }
+  }
+}
+```
