@@ -2,6 +2,8 @@
 title:  'Getting Familiar With Nginx'
 date:  2023-12-25T22:28:40+01:00
 draft:  true
+tags:
+ - nginx
 ---
 ## Introduction
 Some time ago I've stared working on web app in Go. I've been using standard `net/http` library to handle all requests. I have also implemented some basic logging and then I realized that I've written quite a bit code that not necessary is related with my app, but it does basic HTTP server stuff. So I've asked myself: "Do I need use some HTTP server like for Python web app? Or can I implement all with `net/http` Go library. I've started to looking for some answers and have found many statements that I don't need HTTP server and can implement everything in Go, but most of the times using HTTP sever like nginx or Apache can save me a lot of time and issues. Of course for learning purposes it is good idea to implement all by yourself. You will face many issues and rabbit holes by going this way and it will give you experience and understating, but if you want to deliver some app you can leverage existing solutions that solve all those problems.\
@@ -116,7 +118,7 @@ Those variables can be pass to your application or some traffic decisions can be
 All variables are available at [nginx site](http://nginx.org/en/docs/varindex.html)
 
 ### Limiting connections
-To limit HTTP connections you should create zone with `limit_conn_zone` directive (key is remote address in binary form, zone name is limitbyaddr and its size is 10MB). `limit_conn_status` specifies response code if limit is reached (503 is default). `limit_conn` directive takes two parameters: zone name and number of connections. You can use `limit_conn` in `http`, `server` and `location` context.
+To limit HTTP connections you should create zone with `limit_conn_zone` directive (key is remote address in binary form, zone name is `limitbyaddr` and its size is 10MB). `limit_conn_status` specifies response code if limit is reached (503 is default). `limit_conn` directive takes two parameters: zone name and number of connections. You can use `limit_conn` in `http`, `server` and `location` context.
 ```
 http {
   limit_conn_zone $binary_remote_addr zone=limitbyaddr:10m;
@@ -186,3 +188,130 @@ http {
   }
 }
 ```
+## Hardening
+### Basic Authentication
+Open source version of nginx only allows for basic HTTP authentication. Other methods are implemented in nginx plus.\
+To enable HTTP basic authentication, you have to create file with credentials.
+```
+name1:password1
+name2:password2:comment
+name3:password3
+```
+Password have to be encrypted or hashed e.g. You can use openssl command to encrypt password: `openssl passwd YourPassword`
+Next you can use `auth_basic` and `auth_basic_user_file` to enable HTTP basic authentication. It can be used in `http`, `server` and `location` context.
+```
+location / {
+  auth_basic "Private site";
+  auth_basic_user_file conf.d/passwd;
+}
+```
+
+
+### Authentication Subrequest
+In the book it is called authentication, but for me it looks like authorization mechanism.\
+Open source nginx allows to authorize requests by third-party system. In order to do that you have to use `auth_reqest` with internal location. If you want to keep some data from subrequest response you can use `auth_request_set`.\
+To remove body from subrequest use `proxy_pass_request_body` directive and change `Content-Length` header to `""`.\
+If subrequest response status is 200, original request will be server.\
+If subrequest response status is 401 or 403, original request will return the same status code.
+```
+location /private/ {
+  auth_request /auth;
+  auth_request_set $auth_status $upstream_status;
+}
+location = /auth {
+  internal;
+  proxy_pass http://auth-server;
+  proxy_pass_request_body off;
+  proxy_set_header Content-Length "";
+  proxy_set_header X-Original-URI $request_uri;
+}
+```
+### Limit by IP
+You can limit access to specific IP addresses by using `allow` and `deny` directives. It can be used in `http`, `server`, `location` and `stream` context. It also can by combined with other mechanisms e.g. Basic authentication by using `satisfy` directive. With `satisfy any` only one criteria has to be met and with `satisfy all` all criteria have to be met.
+
+```
+location / {
+  satisfy any;
+  allow 192.168.1.0/24;
+  deny all;
+  auth_basic "closed site";
+  auth_basic_user_file conf/htpasswd;
+}
+```
+
+### HTTPS
+To enable https you have to specify `ssl_certificate` and `ssl_certificate_key`.\
+Other options also can be adjusted if needed.
+```
+http { # All directives used below are also valid in stream
+  server {
+    listen 8443 ssl;
+    # Set accepted protocol and cipher
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    # RSA certificate chain loaded from file
+    ssl_certificate /etc/nginx/ssl/example.crt;
+    # RSA encryption key loaded from file
+    ssl_certificate_key /etc/nginx/ssl/example.pem;
+    # Elliptic curve cert from variable value
+    ssl_certificate $ecdsa_cert;
+    # Elliptic curve key as file path variable
+    ssl_certificate_key data:$ecdsa_key_path;
+    # Client-Server negotiation caching
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+  }
+}
+```
+By default nginx does not verify upstream certificates. To enable verification `proxy_ssl_verify` directive can be used.
+```
+location / {
+  proxy_pass https://upstream.example.com;
+  proxy_ssl_verify on;
+  proxy_ssl_verify_depth 2;
+  proxy_ssl_protocols TLSv1.2;
+}
+```
+If you want also listen for HTTP traffic but only serve https you can configure redirection.
+```
+server {
+  listen 80 default_server;
+  listen [::]:80 default_server;
+  server_name _;
+  return 301 https://$host$request_uri;
+}
+```
+We can also instruct the browser to always send https requests by setting HSTS header. `add_header Strict-Transport-Security max-age=31536000;`
+### Secure location
+You can also limit access to resources by specifying some secret. Then to access that resources you have to generate link. To generate link you have to make MD5 hash with URI (`echo -n 'index.htmlmySecret' | openssl md5 -hex`) and your secret and then place hash before URI.  `www.example.com/resources/a53bee08a4bf0bbea978ddf736363a12/index.html`. The drawback of this method that hash in not user specific so anyone who get the link can access resource.
+```
+location /resources {
+  secure_link_secret mySecret;
+  if ($secure_link = "") { return 403; }
+  rewrite ^ /secured/$secure_link;
+}
+location /secured/ {
+  internal;
+  root /var/www;
+}
+```
+Another way secure access is to restrict access with expiration. This time we can specify any variable to create MD5 hash, so it can be user specific.\
+```
+location /resources {
+  root /var/www;
+  secure_link $arg_md5,$arg_expires;
+  secure_link_md5 "$secure_link_expires$uri$remote_addrmySecret";
+  if ($secure_link = "") { return 403; }
+  if ($secure_link = "0") { return 410; }
+}
+```
+To generate link we have to create MD5 hash again, but this time in slightly different way. It’s an MD5 hash in binary format, base64-encoded, with plus signs (+) translated to hyphens (-), slashes (/) translated to underscores (\_), and equal signs (=) removed.
+```bash
+echo -n '1924905600/resources/index.html127.0.0.1 mySecret' \
+| openssl md5 -binary \
+| openssl base64 \
+| tr +/ -_ \
+| tr -d =
+```
+MD5 hash and expiration date in the Unix epoch format we have to add in query string `/resources/index.html?md5=sqysOw5kMvQBL3j9ODCyoQ&expires=1924905600`
+
