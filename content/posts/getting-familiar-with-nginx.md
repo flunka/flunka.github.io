@@ -10,7 +10,7 @@ Some time ago I've stared working on web app in Go. I've been using standard `ne
 Keeping that in mind I've decided to learn more about nginx. I want to have better understating what it can provide and how I can leverage it. Currently I have some experience with nginx configuration, but I don't feel confident and I definitely not aware of all its features. The purpose of this post is to document my familiarizing with nginx.\
 These notes are based on free book `NGINX Cookbook 2nd edition 2022` which is available on [Nginx site](https://www.nginx.com/resources/library/complete-nginx-cookbook/)
 ## Configuration
-Directories `site-enabled` and `site-available` are deprecated. Directory `conf.d` should be used for config files.\
+`/etc/nginx/nginx.conf` is default entry point. Directories `site-enabled` and `site-available` are deprecated. Directory `conf.d` should be used for config files.\
 `nginx -t` - test configuration\
 `nginx -s realod` - reload configuration
 ## Load balancer
