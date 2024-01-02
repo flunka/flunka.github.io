@@ -1,7 +1,7 @@
 ---
 title:  'Getting Familiar With Nginx'
-date:  2023-12-25T22:28:40+01:00
-draft:  true
+date:  2024-01-02T22:28:40+01:00
+draft:  false
 tags:
  - nginx
 ---
@@ -376,6 +376,7 @@ To specify logs format use `log_format` directive (it is only valid in HTTP cont
 * `tag` (optional; default: `nginx`)
 * `severity` (optional; default: `info`)
 * `nohostname` (optional) - disables adding of the hostname filed into the syslog message header
+Writing logs can be also buffered. `buffered` parameter specifies buffer size. `flush` specifies how long log can be in buffer. `gzip` specifies compression from 1 (lowest compression) to 9 (highest compression). 
 ```
 http {
   log_format geoproxy
@@ -390,7 +391,7 @@ http {
   '$upstream_status $upstream_response_time '
   '"$http_referer" "$http_user_agent"';
    server {
-    access_log /var/log/nginx/access.log geoproxy;
+    access_log /var/log/nginx/access.log geoproxy buffer=32k flush=1m gzip=1;
     error_log /var/log/nginx/error.log warn;
   } 
   
@@ -422,3 +423,7 @@ server {
   }
 }
 ```
+
+## Summary
+Before reading the `NGINX Cookbook 2nd edition 2022` I thought nginx is just a HTTP server. Now I am more aware what nginx can do. I am really impressed how many useful features nginx has e.g. Load balancing, caching. There is also a way more features in nginx plus, but I did not include them here because I don't have environment to test it. 
+
