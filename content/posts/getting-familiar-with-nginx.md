@@ -13,6 +13,21 @@ These notes are based on free book `NGINX Cookbook 2nd edition 2022` which is av
 `/etc/nginx/nginx.conf` is default entry point. Directories `site-enabled` and `site-available` are deprecated. Directory `conf.d` should be used for config files.\
 `nginx -t` - test configuration\
 `nginx -s realod` - reload configuration
+### Enable Stub Status
+To enable stub status use `stub_status` directive in some location. It gives you information about:
+* active connections
+* total accepted connection
+* connections handled
+* requests served
+This information is global. It is not specific to HTTP server where stub status is defined.
+```
+location /stub_status {
+  stub_status;
+  # Set IP restrictions as appropriate
+  allow 127.0.0.1;
+  deny all;
+}
+```
 ## Load balancer
 Nginx can load balance HTTP, TCP and UDP traffic.
 ### Load balancing algorithms
