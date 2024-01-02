@@ -368,3 +368,57 @@ http {
   }
 }
 ```
+## Logs
+### Logs format
+To specify logs format use `log_format` directive (it is only valid in HTTP context). You have to specify name of format and how logs should looks like. You can define multiple logs formats. To use log format, use `access_log` directive with log file path and logs format name. `access_log` directive can be used in many context with different file path and format. Error logs can not have defined format. You can only specify file path and log level (default is error). Available log levels are `debug`, `info`, `notice`, `warn`, `error`, `crit`, `alert`, or `emerg`. Logs can be also forwarded to syslog server. To do that use `syslog` parameter and provide options:
+* `server` (required) - IP, DNS or Unix socket
+* `facility` (optional; default: `local7`) - one of 23 attributes defined in RFC for syslog
+* `tag` (optional; default: `nginx`)
+* `severity` (optional; default: `info`)
+* `nohostname` (optional) - disables adding of the hostname filed into the syslog message header
+```
+http {
+  log_format geoproxy
+  '[$time_local] $remote_addr '
+  '$realip_remote_addr $remote_user '
+  '$proxy_protocol_server_addr $proxy_protocol_server_port '
+  '$request_method $server_protocol '
+  '$scheme $server_name $uri $status '
+  '$request_time $body_bytes_sent '
+  '$geoip_city_country_code3 $geoip_region '
+  '"$geoip_city" $http_x_forwarded_for '
+  '$upstream_status $upstream_response_time '
+  '"$http_referer" "$http_user_agent"';
+   server {
+    access_log /var/log/nginx/access.log geoproxy;
+    error_log /var/log/nginx/error.log warn;
+  } 
+  
+  server {
+    error_log syslog:server=10.0.1.42 debug;
+    access_log syslog:server=10.0.1.42,tag=nginx,severity=info geoproxy;
+  }
+}
+```
+### Tracing
+`$request_id` variable is available since nginx version `1.11.0`. It can be use to trace requests. It contains randomly generated string of 32 hex characters. In example below this variable is used in nginx logs format and it is also passed to upstream server (`proxy_set_header`) and it is added to response to client (`add_header`)
+```
+log_format trace '$remote_addr - $remote_user [$time_local] '
+                  '"$request" $status $body_bytes_sent '
+                  '"$http_referer" "$http_user_agent" '
+                  '"$http_x_forwarded_for" $request_id';
+upstream backend {
+  server 10.0.0.42;
+}
+server {
+  listen 80;
+  # Add the header X-Request-ID to the response to the client
+  add_header X-Request-ID $request_id;
+  location / {
+    proxy_pass http://backend;
+    # Send the header X-Request-ID to the application
+    proxy_set_header X-Request-ID $request_id;
+    access_log /var/log/nginx/access_trace.log trace;
+  }
+}
+```
