@@ -200,12 +200,16 @@ To create cache for requests you can use `proxy_cache_path` and specify:
 * path to directory that will be created for cache,
 * zone name for shared memory and its size (in example name is CACHE and size is 60MB)
 * (optional) directory structure (`levels`)
-* (optional) when release cached entries (`inactive`)
+* (optional) when release cached entries if not requested (`inactive`)
 * (optional) max size of cache (`max_size`)
 
 `proxy_cache_path` can be used only in `http` context.\
 To use created cache you have to use `proxy_cache` directive in `http`, `server` or `location` context.\
 You can define input for hash with `proxy_cache_key` directive.\
+During the tests I noticed that without `proxy_cache_valid` nginx does not cache at all, so this directive is required. It takes two parameters:
+* list of status codes (optional; if not specified only responses with codes `200`, `301` and `302` will be cached)
+* time of how long cache will be valid
+
 Cache can be bypassed by using `proxy_cache_bypass` directive. In example cache for location `/live` will be bypassed when request contains header `cache_bypass`.\
 To increase nginx performance you can add header to response to allow client to cache responses. In example all css and js files should cached on client side and expired after one year. `~*` modifier after `location` means that URI should be match for case insensitive regular expression.
 ### Example
@@ -215,6 +219,7 @@ http {
   server {
     proxy_cache CACHE;
     proxy_cache_key "$host$request_uri $cookie_user";
+    proxy_cache_valid 200 5m;
     location /live {
         proxy_cache_bypass $http_cache_bypass;
     }
