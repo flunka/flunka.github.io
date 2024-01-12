@@ -253,7 +253,7 @@ location / {
 In the book it is called authentication, but for me it looks like authorization mechanism.\
 Open source nginx allows to authorize requests by third-party system. In order to do that you have to use `auth_reqest` with internal location. If you want to keep some data from subrequest response you can use `auth_request_set`.\
 To remove body from subrequest use `proxy_pass_request_body` directive and change `Content-Length` header to `""`.\
-If subrequest response status is 200, original request will be server.\
+If subrequest response status is 200, original request will be served.\
 If subrequest response status is 401 or 403, original request will return the same status code.
 ```
 location /private/ {
