@@ -1,7 +1,7 @@
 ---
 title:  'CTF Challenge'
 date:  2024-03-22T21:10:44+01:00
-draft:  true
+draft:  false
 tags:
   - ctf
   - security
